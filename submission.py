@@ -3,8 +3,8 @@ Homework4.
 Replace 'pass' by your implementation.
 """
 
-# Insert your package here
-
+import numpy as np
+import helper
 
 '''
 Q2.1: Eight Point Algorithm
@@ -14,8 +14,56 @@ Q2.1: Eight Point Algorithm
     Output: F, the fundamental matrix
 '''
 def eightpoint(pts1, pts2, M):
-    # Replace pass by your implementation
-    pass
+    N = pts1.shape[0]
+
+    # normalize pts
+    pts1, pts2 = pts1/float(M), pts2/float(M)
+    x1s = pts1[:, 0] #(N,)
+    y1s = pts1[:, 1]
+    x2s = pts2[:, 0]
+    y2s = pts2[:, 1]
+    
+    # construct columns of A
+    c0 = x2s * x1s
+    c1 = x2s * y1s
+    c2 = x2s
+    c3 = y2s * x1s
+    c4 = y2s * y1s
+    c5 = y2s
+    c6 = x1s
+    c7 = y1s
+    c8 = np.ones((N,), dtype=np.float32)
+    
+    A = np.stack((c0, c1, c2, c3, c4, c5, c6, c7, c8), axis=1)
+    
+    # solve a raw f
+    U, singular_vals, Vt = np.linalg.svd(A)
+    # f is the last column of V, so the last raw of Vt
+    f = Vt[-1, :] #(9,)
+    F_raw = f.reshape(3, 3)
+
+    # adjust to rank2 by shutting the last singular value to 0
+    U, singular_vals, Vt = np.linalg.svd(F_raw)
+    S = np.zeros((3, 3), dtype=np.float32)
+    for i in range(2):
+        S[i, i] = singular_vals[i]
+    F_norm = U @ S @ Vt
+    
+    # local minimization
+    F_norm = helper.refineF(F_norm, pts1, pts2)
+    
+    # now get the F for unormalized coordinates
+    # normalization transform
+    T = np.zeros((3, 3), dtype=np.float32)
+    T[0, 0] = 1.0 / M
+    T[1, 1] = 1.0 / M
+    T[2, 2] = 1.0
+
+    F_unnorm = T.transpose() @ F_norm @ T
+    
+    np.savez('q2_1.npz', F=F_unnorm, M=M)
+    return F_unnorm
+    
 
 
 '''
