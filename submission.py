@@ -157,8 +157,42 @@ Q3.2: Triangulate a set of 2D coordinates in the image to a set of 3D points.
             err, the reprojection error.
 '''
 def triangulate(C1, pts1, C2, pts2):
-    # Replace pass by your implementation
-    pass
+    Ps = list()
+    err = 0
+    assert pts1.shape[0] == pts2.shape[0]
+    N = pts1.shape[0]
+    for i in range(N):
+        x1, y1 = pts1[i, :]
+        x2, y2 = pts2[i, :]
+        # construct A
+        A0 = C1[0, :] - x1*C1[2, :]
+        A1 = C1[1, :] - y1*C1[2, :]
+        A2 = C2[0, :] - x2*C2[2, :]
+        A3 = C2[1, :] - y2*C2[2, :]
+        A = np.stack((A0, A1, A2, A3), axis=0)
+        # solve w, just find the null space
+        U, s, Vt = np.linalg.svd(A)
+        w_raw = Vt[-1, :] #(4,)
+        w_3d = w_raw[0:3] / w_raw[3] #(3,)
+        Ps.append(w_3d)
+        
+        # get reproject error
+        w_homo = np.zeros((4, 1), dtype=np.float32)
+        w_homo[0:3, 0] = w_3d
+        w_homo[3, 0] = 1
+        p1_rep = C1 @ w_homo
+        p2_rep = C2 @ w_homo
+        
+        x1_rep, y1_rep = p1_rep[0:2, 0] / p1_rep[2, 0]
+        x2_rep, y2_rep = p2_rep[0:2, 0] / p2_rep[2, 0]
+
+        err += (x1_rep-x1)**2 + (y1_rep-y1)**2 + \
+               (x2_rep-x2)**2 + (y2_rep-y2)**2
+        
+    P = np.stack(Ps, axis=0)
+    return P, err
+        
+
 
 
 '''
