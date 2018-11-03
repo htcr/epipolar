@@ -60,8 +60,6 @@ def eightpoint(pts1, pts2, M):
     T[2, 2] = 1.0
 
     F_unnorm = T.transpose() @ F_norm @ T
-    
-    np.savez('q2_1.npz', F=F_unnorm, M=M)
     return F_unnorm
     
 
@@ -74,9 +72,69 @@ Q2.2: Seven Point Algorithm
     Output: Farray, a list of estimated fundamental matrix.
 '''
 def sevenpoint(pts1, pts2, M):
-    # Replace pass by your implementation
-    pass
+    N = pts1.shape[0]
 
+    # normalize pts
+    pts1, pts2 = pts1/float(M), pts2/float(M)
+    x1s = pts1[:, 0] #(N,)
+    y1s = pts1[:, 1]
+    x2s = pts2[:, 0]
+    y2s = pts2[:, 1]
+    
+    # construct columns of A
+    c0 = x2s * x1s
+    c1 = x2s * y1s
+    c2 = x2s
+    c3 = y2s * x1s
+    c4 = y2s * y1s
+    c5 = y2s
+    c6 = x1s
+    c7 = y1s
+    c8 = np.ones((N,), dtype=np.float32)
+    
+    A = np.stack((c0, c1, c2, c3, c4, c5, c6, c7, c8), axis=1)
+    
+    # solve a raw f
+    U, singular_vals, Vt = np.linalg.svd(A)
+    # fk is the last kth column of V, so the last raw of Vt
+    f1, f2 = Vt[-1, :], Vt[-2, :] #(9,)
+    F1, F2 = f1.reshape(3, 3), f2.reshape(3, 3)
+
+    a, b = F1-F2, F2
+
+    fun = lambda x: np.linalg.det(x*a + b)
+    fun0 = fun(0)
+    fun1 = fun(1)
+    fun_1 = fun(-1)
+    fun2 = fun(2)
+    fun_2 = fun(-2)
+
+    c0 = fun0
+    c1 = (2.0/3)*(fun1-fun_1) - (1.0/12)*(fun2-fun_2)
+    c3 = (1.0/12)*(fun2 - fun_2) - (1.0/6)*(fun1-fun_1)
+    c2 = fun1 - c0 - c1 - c3
+
+    roots = np.roots([c3, c2, c1, c0])
+    roots_imag_mag = np.abs(np.imag(roots))
+    eps = 0.000001
+    roots = roots[roots_imag_mag < eps]
+
+    # now get the F for unormalized coordinates
+    # normalization transform
+    T = np.zeros((3, 3), dtype=np.float32)
+    T[0, 0] = 1.0 / M
+    T[1, 1] = 1.0 / M
+    T[2, 2] = 1.0
+
+    Fs = list()
+    for root in roots:
+        F_norm = root*a + b
+        F_unnorm = T.transpose() @ F_norm @ T
+        Fs.append(F_unnorm)
+    
+    return Fs
+
+    
 
 '''
 Q3.1: Compute the essential matrix E.
