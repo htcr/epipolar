@@ -144,8 +144,7 @@ Q3.1: Compute the essential matrix E.
     Output: E, the essential matrix
 '''
 def essentialMatrix(F, K1, K2):
-    # Replace pass by your implementation
-    pass
+    return K2.transpose() @ F @ K1
 
 
 '''
