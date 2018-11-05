@@ -206,9 +206,91 @@ Q4.1: 3D visualization of the temple images.
             y2, y-coordinates of the pixel on im2
 
 '''
+def get_kernel_response(im, x, y, kxs, kys):
+    # im.shape = (h, w, c)
+    h, w = im.shape[0:2]
+    xs, ys = kxs+x, kys+y
+    xs, ys = np.clip(xs, 0, h-1).astype(np.int32), np.clip(ys, 0, h-1).astype(np.int32)
+    # (Nk, c)
+    response = im[ys, xs, :]
+    return response
+
 def epipolarCorrespondence(im1, im2, F, x1, y1):
-    # Replace pass by your implementation
-    pass
+    # homogeneous
+    p1 = np.array([[x1], [y1], [1]], dtype=np.float32)
+    # epipolar line on im2, (3, 1)
+    l2 = F @ p1
+    # define search boundaries
+    # because we don't expect matching point to be too far
+    r = 30
+    bl, bt, br, bb = x1-r, y1-r, x1+r, y1+r
+    # get intersection points of l2 and boundaries. 
+    # should pick 2 out of 4 points.
+    ll = np.array([1, 0, -bl], dtype=np.float32).reshape(-1, 1)
+    lt = np.array([0, 1, -bt], dtype=np.float32).reshape(-1, 1)
+    lr = np.array([1, 0, -br], dtype=np.float32).reshape(-1, 1)
+    lb = np.array([0, 1, -bb], dtype=np.float32).reshape(-1, 1)
+
+    boundary_lines = [ll, lt, lr, lb]
+    # intersection points
+    intersect_points = [np.cross(l.rehape(-1), l2.reshape(-1)).reshape(-1, 1) for l in boundary_lines]
+    # select the end points of search line segment
+    end_points = list()
+    for p in intersect_points:
+        if np.abs(p[2, 0]) > 0.000001:
+            ph = p / p[2, 0]
+            min_dist = np.min(np.abs(ph[0:2, :]-p1[0:2, :]))
+            if min_dist < r*(1.05):
+                end_points.append(ph)
+    assert len(end_points) >= 2
+    # in corner cases may encounter this, just pick two far points
+    search_begin = None
+    search_end = None
+    if len(end_points) > 2:
+        p0 = end_points[0]
+        for i in range(1, len(end_points)):
+            p1 = end_points[i]
+            if np.min(np.abs(p0[0:2, :]-p1[0:2, :])) > r*0.1:
+                search_begin = p0[0:2, :]
+                search_end = p1[0:2, :]
+                break
+    assert search_begin is not None and search_end is not None
+    
+    # we now construct a kearnel template
+    # kernel radius
+    kr = 10
+    kxs = np.arange(-kr, kr+1, 1.0)
+    kys = kxs
+    kxs, kys = np.meshgrid(kxs, kys)
+    # relative sample positions
+    kxs, kys = kxs.reshape(-1), kys.reshape(-1)
+    # now generate gaussian sampling weight
+    std = kr / 3.0
+    kws = np.exp( -( (kxs**2 + kys**2)/(2*std**2) ) ) / (2*np.pi*std**2)
+    
+    # get source response
+    r1 = get_kernel_response(im1, x1, y1, kxs, kys)
+
+    # sweep the kernel over search segment
+    steps = int(np.sum((search_begin-search_end)**2)**0.5)
+    x_step = (search_end[0, 0] - search_begin[0, 0]) / steps
+    y_step = (search_end[1, 0] - search_begin[1, 0]) / steps
+    x2, y2 = x1, y1
+    min_dist = np.Inf
+    best_x2, best_y2 = -1, -1
+    for i in range(steps):
+        # get target response
+        r2 = get_kernel_response(im2, x2, y2, kxs, kys)
+        # calc dist
+        dists = np.sum((r2 - r1)**2, axis=2)**0.5 # (Nk,)
+        dist = np.sum(dists*kws)
+        if dist < min_dist:
+            min_dist = dist
+            best_x2, best_y2 = x2, y2
+
+        x2, y2 = x2 + x_step, y2 + y_step
+    
+    return best_x2, best_y2
 
 '''
 Q5.1: RANSAC method.
