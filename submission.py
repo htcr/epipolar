@@ -294,12 +294,7 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
 
         x2, y2 = x2 + x_step, y2 + y_step
     
-    # debug
-    #im2_copy = im2.copy()
-    #cv2.rectangle(im2_copy, (int(search_begin[0, 0]), int(search_begin[1, 0])), (int(search_end[0, 0]), int(search_end[1, 0])), color=(255, 255, 255))
-    #im2[:, :, :] = im2_copy[:, :, :]
-
-    return best_x2, best_y2, search_begin, search_end
+    return best_x2, best_y2 #, search_begin, search_end # for debug
 
 '''
 Q5.1: RANSAC method.
