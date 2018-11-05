@@ -223,7 +223,7 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     l2 = F @ p1
     # define search boundaries
     # because we don't expect matching point to be too far
-    r = 30
+    r = 50
     bl, bt, br, bb = x1-r, y1-r, x1+r, y1+r
     # get intersection points of l2 and boundaries. 
     # should pick 2 out of 4 points.
@@ -262,7 +262,7 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     
     # we now construct a kearnel template
     # kernel radius
-    kr = 10
+    kr = 20
     kxs = np.arange(-kr, kr+1, 1.0)
     kys = kxs
     kxs, kys = np.meshgrid(kxs, kys)
