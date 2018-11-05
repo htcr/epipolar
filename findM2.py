@@ -57,7 +57,6 @@ P = Ps[best_M2_idx]
 C2 = C2s[best_M2_idx]
 
 # visual verify
-'''
 p_homo = np.concatenate((P.transpose(), np.ones((1, pts2.shape[0]))), axis=0)
 pts2_project = C2 @ p_homo
 xs_project = pts2_project[0, :] / pts2_project[2, :]
@@ -69,7 +68,6 @@ ax.imshow(im2)
 ax.scatter(x=xs, y=ys, color=(0, 1, 0))
 ax.scatter(x=xs_project, y=ys_project, color=(1, 0, 0))
 plt.show()
-'''
 
 np.savez('q3_3.npz', M2=M2, C2=C2, P=P)
 

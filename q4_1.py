@@ -12,4 +12,7 @@ M = np.max(im1.shape)
 
 F = eightpoint(pts1, pts2, M)
 
+np.savez('q4_1.npz', F=F, pts1=pts1, pts2=pts2)
+
 epipolarMatchGUI(im1, im2, F)
+
