@@ -5,6 +5,7 @@ Replace 'pass' by your implementation.
 
 import numpy as np
 import helper
+import cv2
 
 '''
 Q2.1: Eight Point Algorithm
@@ -233,14 +234,14 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
 
     boundary_lines = [ll, lt, lr, lb]
     # intersection points
-    intersect_points = [np.cross(l.rehape(-1), l2.reshape(-1)).reshape(-1, 1) for l in boundary_lines]
+    intersect_points = [np.cross(l.reshape(-1), l2.reshape(-1)).reshape(-1, 1) for l in boundary_lines]
     # select the end points of search line segment
     end_points = list()
     for p in intersect_points:
         if np.abs(p[2, 0]) > 0.000001:
             ph = p / p[2, 0]
-            min_dist = np.min(np.abs(ph[0:2, :]-p1[0:2, :]))
-            if min_dist < r*(1.05):
+            max_dist = np.max(np.abs(ph[0:2, :]-p1[0:2, :]))
+            if max_dist < r*(1.05):
                 end_points.append(ph)
     assert len(end_points) >= 2
     # in corner cases may encounter this, just pick two far points
@@ -254,6 +255,9 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
                 search_begin = p0[0:2, :]
                 search_end = p1[0:2, :]
                 break
+    else:
+        search_begin = end_points[0][0:2, :]
+        search_end = end_points[1][0:2, :]
     assert search_begin is not None and search_end is not None
     
     # we now construct a kearnel template
@@ -275,14 +279,14 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     steps = int(np.sum((search_begin-search_end)**2)**0.5)
     x_step = (search_end[0, 0] - search_begin[0, 0]) / steps
     y_step = (search_end[1, 0] - search_begin[1, 0]) / steps
-    x2, y2 = x1, y1
+    x2, y2 = search_begin[0, 0], search_begin[1, 0]
     min_dist = np.Inf
     best_x2, best_y2 = -1, -1
     for i in range(steps):
         # get target response
         r2 = get_kernel_response(im2, x2, y2, kxs, kys)
         # calc dist
-        dists = np.sum((r2 - r1)**2, axis=2)**0.5 # (Nk,)
+        dists = np.sum((r2 - r1)**2, axis=1)**0.5 # (Nk,)
         dist = np.sum(dists*kws)
         if dist < min_dist:
             min_dist = dist
@@ -290,7 +294,12 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
 
         x2, y2 = x2 + x_step, y2 + y_step
     
-    return best_x2, best_y2
+    # debug
+    #im2_copy = im2.copy()
+    #cv2.rectangle(im2_copy, (int(search_begin[0, 0]), int(search_begin[1, 0])), (int(search_end[0, 0]), int(search_end[1, 0])), color=(255, 255, 255))
+    #im2[:, :, :] = im2_copy[:, :, :]
+
+    return best_x2, best_y2, search_begin, search_end
 
 '''
 Q5.1: RANSAC method.
