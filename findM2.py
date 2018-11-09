@@ -8,6 +8,8 @@ import numpy as np
 import cv2
 from submission import eightpoint, essentialMatrix, triangulate
 from helper import camera2
+
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
 im1 = cv2.imread('../data/im1.png')[:, :, ::-1]
@@ -31,31 +33,27 @@ M1[[0, 1, 2], [0, 1, 2]] = 1
 M2s = camera2(E)
 print(M2s.shape)
 
-# reproject error
-err = np.Inf
-best_M2_idx = -1
-
 C1 = K1 @ M1
 
 # recovered point clouds, (N, 3)
 Ps = list()
 C2s = list()
-# get best M2
+# get P and C2 corresponding to each M2
 for i in range(M2s.shape[2]):
     M2 = M2s[:, :, i]
     C2 = K2 @ M2
     C2s.append(C2)
     P, cur_err = triangulate(C1, pts1, C2, pts2)
     Ps.append(P)
-    if cur_err < err:
-        err = cur_err
-        best_M2_idx = i
     print('Reprojection error of M2_%d: %f' % (i, cur_err))
 
-M2 = M2s[:, :, best_M2_idx]
-P = Ps[best_M2_idx]
-C2 = C2s[best_M2_idx]
+chosen_M2_idx = 2
 
+M2 = M2s[:, :, chosen_M2_idx]
+P = Ps[chosen_M2_idx]
+C2 = C2s[chosen_M2_idx]
+
+'''
 # visual verify
 p_homo = np.concatenate((P.transpose(), np.ones((1, pts2.shape[0]))), axis=0)
 pts2_project = C2 @ p_homo
@@ -67,6 +65,21 @@ ax = plt.subplot()
 ax.imshow(im2)
 ax.scatter(x=xs, y=ys, color=(0, 1, 0))
 ax.scatter(x=xs_project, y=ys_project, color=(1, 0, 0))
+plt.show()
+'''
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+xmin, xmax = np.min(P[:, 0]), np.max(P[:, 0])
+ymin, ymax = np.min(P[:, 1]), np.max(P[:, 1])
+zmin, zmax = np.min(P[:, 2]), np.max(P[:, 2])
+
+ax.set_xlim3d(xmin, xmax)
+ax.set_ylim3d(ymin, ymax)
+ax.set_zlim3d(zmin, zmax)
+
+ax.scatter(P[:, 0], P[:, 1], P[:, 2], c='b', marker='o')
 plt.show()
 
 np.savez('q3_3.npz', M2=M2, C2=C2, P=P)
