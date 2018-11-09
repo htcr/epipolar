@@ -305,8 +305,49 @@ Q5.1: RANSAC method.
     Output: F, the fundamental matrix
 '''
 def ransacF(pts1, pts2, M):
-    # Replace pass by your implementation
-    pass
+    max_inlier_num = 0
+    max_iter_num = 200
+    best_inlier_idx = None
+    N = pts1.shape[0]
+    
+    # homogeneous coords
+    # (N, 3)
+    pts1_homo_t = np.concatenate((pts1, np.ones((N, 1))), axis=1)
+    # (N, 3)
+    pts2_homo_t = np.concatenate((pts2, np.ones((N, 1))), axis=1)
+
+    for i in range(max_iter_num):
+        selected_idx = np.random.choice(N, 7, replace=False)
+        selected_pts1 = pts1[selected_idx, :]
+        selected_pts2 = pts2[selected_idx, :]
+        F_array = sevenpoint(selected_pts1, selected_pts2, M)
+                
+        for F in F_array:
+            # (N, 3)
+            epipolar_lines = (pts2_homo_t @ F)
+            # (N,), distance to epipolar line |ax + by + c| / (a^2 + b^2)^0.5
+            err = np.abs(np.sum((pts2_homo_t @ F) * pts1_homo_t, axis=1)) / (epipolar_lines[:, 0]**2 + epipolar_lines[:, 1]**2)**0.5
+            inlier_idx = np.where(np.abs(err) < 2.0)[0]
+            if inlier_idx.shape[0] > max_inlier_num:
+                max_inlier_num = inlier_idx.shape[0]
+                best_inlier_idx = inlier_idx
+                print('max inlier num updated: {}'.format(max_inlier_num))
+
+    best_pts1, best_pts2 = pts1[best_inlier_idx, :], pts2[best_inlier_idx, :]
+    F_array = sevenpoint(best_pts1, best_pts2, M)
+    best_F = None
+    max_inlier_num = 0
+    for F in F_array:
+        # (N, 3)
+        epipolar_lines = (pts2_homo_t @ F)
+        # (N,), distance to epipolar line |ax + by + c| / (a^2 + b^2)^0.5
+        err = np.abs(np.sum((pts2_homo_t @ F) * pts1_homo_t, axis=1)) / (epipolar_lines[:, 0]**2 + epipolar_lines[:, 1]**2)**0.5
+        inlier_idx = np.where(np.abs(err) < 2.0)[0]
+        if inlier_idx.shape[0] > max_inlier_num:
+            max_inlier_num = inlier_idx.shape[0]
+            best_F = F
+
+    return best_F
 
 '''
 Q5.2: Rodrigues formula.
