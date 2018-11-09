@@ -54,10 +54,6 @@ M1[[0, 1, 2], [0, 1, 2]] = 1
 M2s = camera2(E)
 print(M2s.shape)
 
-# reproject error
-err = np.Inf
-best_M2_idx = -1
-
 C1 = K1 @ M1
 
 # recovered point clouds, (N, 3)
@@ -70,21 +66,16 @@ for i in range(M2s.shape[2]):
     C2s.append(C2)
     P, cur_err = triangulate(C1, pts1, C2, pts2)
     Ps.append(P)
-    if cur_err < err:
-        err = cur_err
-        best_M2_idx = i
     print('Reprojection error of M2_%d: %f' % (i, cur_err))
 
-# debug
-best_M2_idx = 3
-M2 = M2s[:, :, best_M2_idx]
-P = Ps[best_M2_idx]
-C2 = C2s[best_M2_idx]
+# choose a best M2
+chose_M2_idx = 2
+M2 = M2s[:, :, chose_M2_idx]
+P = Ps[chose_M2_idx]
+C2 = C2s[chose_M2_idx]
 
-
+np.savez('q4_2.npz', F=F, M1=M1, M2=M2, C1=C1, C2=C2)
 # find M2 ============
-
-#temple_3d, temple_err = triangulate(C1, p1s, C2, p2s)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
@@ -97,6 +88,5 @@ ax.set_xlim3d(xmin, xmax)
 ax.set_ylim3d(ymin, ymax)
 ax.set_zlim3d(zmin, zmax)
 
-#ax.scatter(temple_3d[:, 0], temple_3d[:, 1], temple_3d[:, 2], c='b', marker='o')
 ax.scatter(P[:, 0], P[:, 1], P[:, 2], c='b', marker='o')
 plt.show()
