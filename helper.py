@@ -198,9 +198,9 @@ def epipolarMatchGUI(I1, I2, F):
         # draw points
         x2, y2 = sub.epipolarCorrespondence(I1, I2, F, xc, yc)
         ax2.plot(x2, y2, 'ro', MarkerSize=8, linewidth=2)
-        
-        #debug
+
         '''
+        #debug
         x2, y2, sbegin, send = sub.epipolarCorrespondence(I1, I2, F, xc, yc)
         ax2.plot(x2, y2, 'ro', MarkerSize=8, linewidth=2)
         bx, by = sbegin[0, 0], sbegin[1, 0]

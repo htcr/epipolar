@@ -8,7 +8,15 @@ corresp =  np.load('../data/some_corresp.npz')
 pts1 = corresp['pts1']
 pts2 = corresp['pts2']
 
+
+templeCoords = np.load('../data/templeCoords.npz')
+x1s = templeCoords['x1']
+y1s = templeCoords['y1']
+
+pts1 = np.stack((x1s, y1s), axis=1)
+
 N = pts1.shape[0]
+
 
 ax = plt.subplot()
 ax.imshow(im1)

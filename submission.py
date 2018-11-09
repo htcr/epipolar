@@ -51,7 +51,7 @@ def eightpoint(pts1, pts2, M):
     F_norm = U @ S @ Vt
     
     # local minimization
-    F_norm = helper.refineF(F_norm, pts1, pts2)
+    #F_norm = helper.refineF(F_norm, pts1, pts2)
     
     # now get the F for unormalized coordinates
     # normalization transform
@@ -211,7 +211,7 @@ def get_kernel_response(im, x, y, kxs, kys):
     # im.shape = (h, w, c)
     h, w = im.shape[0:2]
     xs, ys = kxs+x, kys+y
-    xs, ys = np.clip(xs, 0, h-1).astype(np.int32), np.clip(ys, 0, h-1).astype(np.int32)
+    xs, ys = np.clip(xs, 0, w-1).astype(np.int32), np.clip(ys, 0, h-1).astype(np.int32)
     # (Nk, c)
     response = im[ys, xs, :]
     return response
@@ -271,7 +271,8 @@ def epipolarCorrespondence(im1, im2, F, x1, y1):
     # now generate gaussian sampling weight
     std = kr / 3.0
     kws = np.exp( -( (kxs**2 + kys**2)/(2*std**2) ) ) / (2*np.pi*std**2)
-    
+    # kws = 1.0
+
     # get source response
     r1 = get_kernel_response(im1, x1, y1, kxs, kys)
 
