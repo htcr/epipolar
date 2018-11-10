@@ -17,6 +17,6 @@ print(F1)
 displayEpipolarF(im1, im2, F1)
 
 print('======RANSAC=======')
-F2 = ransacF(pts1, pts2, M)
+F2, _ = ransacF(pts1, pts2, M)
 print(F2)
 displayEpipolarF(im1, im2, F2)

@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from submission import ransacF, epipolarCorrespondence, triangulate, essentialMatrix, bundleAdjustment
+from submission import eightpoint, ransacF, epipolarCorrespondence, triangulate, essentialMatrix, bundleAdjustment
 from helper import camera2
 
 from mpl_toolkits.mplot3d import Axes3D
@@ -13,30 +13,49 @@ pts1 = corresp['pts1']
 pts2 = corresp['pts2']
 M = np.max(im1.shape)
 
+print('%d corresps' % pts1.shape[0])
+
 F, inliers = ransacF(pts1, pts2, M)
 
 pts1, pts2 = pts1[inliers, :], pts2[inliers, :]
 
-'''
-templeCoords = np.load('../data/templeCoords.npz')
-x1s = templeCoords['x1']
-y1s = templeCoords['y1']
+
+use_temple = False
+
+if use_temple:
+    templeCoords = np.load('../data/templeCoords.npz')
+    x1s = templeCoords['x1']
+    y1s = templeCoords['y1']
 
 
-x2s, y2s = list(), list()
+    x2s, y2s = list(), list()
 
-# get x2 y2 from x1 y1
-for i in range(x1s.shape[0]):
-    x1, y1 = x1s[i, 0], y1s[i, 0]
-    x2, y2 = epipolarCorrespondence(im1, im2, F, x1, y1)
-    x2s.append(x2)
-    y2s.append(y2)
+    # get x2 y2 from x1 y1
+    for i in range(x1s.shape[0]):
+        x1, y1 = x1s[i, 0], y1s[i, 0]
+        x2, y2 = epipolarCorrespondence(im1, im2, F, x1, y1)
+        x2s.append(x2)
+        y2s.append(y2)
 
-x2s, y2s = np.array(x2s).reshape(-1, 1), np.array(y2s).reshape(-1, 1)
+    x2s, y2s = np.array(x2s).reshape(-1, 1), np.array(y2s).reshape(-1, 1)
 
-pts1 = np.concatenate((x1s, y1s), axis=1)
-pts2 = np.concatenate((x2s, y2s), axis=1)
-'''
+    pts1 = np.concatenate((x1s, y1s), axis=1)
+    pts2 = np.concatenate((x2s, y2s), axis=1)
+
+    N = pts2.shape[0]
+    ax = plt.subplot()
+    ax.imshow(im2)
+    for i in range(N):
+        x, y = pts2[i, :]
+        ax.text(x, y, ('%d' % i), fontsize=10, color=(0, 1, 0))
+    plt.show()
+
+    # play
+    #F = eightpoint(pts1, pts2, M)
+    F, inliers = ransacF(pts1, pts2, M)
+    pts1, pts2 = pts1[inliers, :], pts2[inliers, :]
+    # play
+
 
 # find M2 ============
 
@@ -78,6 +97,7 @@ C2 = C2s[chose_M2_idx]
 
 # find M2 ============
 # bundle adjustment
+
 M2, P = bundleAdjustment(K1, M1, pts1, K2, M2, pts2, P)
 C2 = K2 @ M2
 

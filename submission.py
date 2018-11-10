@@ -118,8 +118,9 @@ def sevenpoint(pts1, pts2, M):
 
     roots = np.roots([c3, c2, c1, c0])
     roots_imag_mag = np.abs(np.imag(roots))
-    eps = 0.000001
+    eps = 0.001
     roots = roots[roots_imag_mag < eps]
+    roots = np.real(roots)
 
     # now get the F for unormalized coordinates
     # normalization transform
@@ -307,7 +308,7 @@ Q5.1: RANSAC method.
 '''
 def ransacF(pts1, pts2, M):
     max_inlier_num = 0
-    max_iter_num = 200
+    max_iter_num = 400
     best_inlier_idx = None
     N = pts1.shape[0]
     
@@ -327,7 +328,8 @@ def ransacF(pts1, pts2, M):
             # (N, 3)
             epipolar_lines = (pts2_homo_t @ F)
             # (N,), distance to epipolar line |ax + by + c| / (a^2 + b^2)^0.5
-            err = np.abs(np.sum((pts2_homo_t @ F) * pts1_homo_t, axis=1)) / (epipolar_lines[:, 0]**2 + epipolar_lines[:, 1]**2)**0.5
+            err = np.abs(np.sum(epipolar_lines * pts1_homo_t, axis=1)) / (epipolar_lines[:, 0]**2 + epipolar_lines[:, 1]**2)**0.5
+            
             inlier_idx = np.where(np.abs(err) < 2.0)[0]
             if inlier_idx.shape[0] > max_inlier_num:
                 max_inlier_num = inlier_idx.shape[0]
@@ -467,7 +469,6 @@ def rodriguesResidual(K1, M1, p1, K2, p2, x):
     e2 = (p2 - p2_rep).reshape(-1)
 
     residuals = np.concatenate((e1, e2), axis=0)
-    print(np.sum(residuals**2))
     return residuals
 
 '''
@@ -486,12 +487,15 @@ def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
     p1 = p1.transpose()
     p2 = p2.transpose()
     residual = lambda x: rodriguesResidual(K1, M1, p1, K2, p2, x)
+        
     R2_init = M2_init[:, 0:3]
     t2_init = M2_init[:, 3]
     r2_init = invRodrigues(R2_init)
     x_init = flatten(P_init, r2_init, t2_init)
     x_optim, _ = scipy.optimize.leastsq(residual, x_init)
     
+    print('Reprojection error after BA: %f' % np.sum(residual(x_optim)**2))
+
     P2, r2, t2 = inflate(x_optim)
     R2 = rodrigues(r2)
     M2 = np.concatenate((R2, t2), axis=1)
