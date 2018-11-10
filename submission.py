@@ -370,15 +370,60 @@ def rodrigues(r):
         
         return R
 
-
 '''
 Q5.2: Inverse Rodrigues formula.
     Input:  R, a rotation matrix
     Output: r, a 3x1 vector
 '''
+def eq(a, b):
+    eps = 0.001
+    return np.abs(a - b) < eps
+
+def gt(a, b):
+    eps = 0.001
+    return a - b > eps
+
+def S_half(r):
+    length = np.sum(r**2)**0.5
+    r1, r2, r3 = r[0, 0], r[1, 0], r[2, 0]
+    if (eq(length, np.pi) and eq(r1, r2) and eq(r1, 0) and gt(0, r3)) \
+        or (eq(r1, 0) and gt(0, r2)) \
+        or (gt(0, r1)):
+        return -r
+    else:
+        return r
+
+def arctan2(y, x):
+    if gt(x, 0):
+        return np.arctan(y / x)
+    elif gt(0, x):
+        return np.pi + np.arctan(y / x)
+    elif eq(x, 0) and gt(y, 0):
+        return np.pi*0.5
+    elif eq(x, 0) and gt(0, y):
+        return -np.pi*0.5
+
 def invRodrigues(R):
-    # Replace pass by your implementation
-    pass
+    eps = 0.001
+    A = (R - R.transpose())*0.5
+    a32, a13, a21 = A[2, 1], A[0, 2], A[1, 0]
+    rho = np.array([[a32], [a13], [a21]], dtype=np.float32)
+    s = np.sum(rho**2)**0.5
+    c = (R[0, 0]+R[1, 1]+R[2, 2] - 1) / 2.0
+    if eq(s, 0) and eq(c, 1):
+        return np.zeros((3, 1), dtype=np.float32)
+    elif eq(s, 0) and eq(c, -1):
+        V = R+np.eye(3, dtype=np.float32)
+        # find a nonzero column of V
+        mark = np.where(np.sum(V**2, axis=0) > eps)[0]
+        v = V[:, mark[0]]
+        u = v / (np.sum(v**2)**0.5)
+        r = S_half(u*np.pi)
+        return r
+    elif not eq(s, 0):
+        u = rho / s
+        theta = arctan2(s, c)
+        return u*theta
 
 '''
 Q5.3: Rodrigues residual.
