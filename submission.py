@@ -348,7 +348,7 @@ def ransacF(pts1, pts2, M):
             max_inlier_num = inlier_idx.shape[0]
             best_F = F
 
-    return best_F
+    return best_F, best_inlier_idx
 
 '''
 Q5.2: Rodrigues formula.
@@ -457,7 +457,7 @@ def rodriguesResidual(K1, M1, p1, K2, p2, x):
     R2 = rodrigues(r2)
     M2 = np.concatenate((R2, t2), axis=1)
     # homogeneous, (4, N)
-    P_h = np.concatenate( ( P, np.ones(P.shape[0], 1) ), axis=1 ).transpose()
+    P_h = np.concatenate( ( P, np.ones( (P.shape[0], 1) ) ), axis=1 ).transpose()
     p1_rep_h = K1 @ M1 @ P_h
     p1_rep = p1_rep_h[0:2, :] / p1_rep_h[2, :]
     p2_rep_h = K2 @ M2 @ P_h
@@ -467,6 +467,7 @@ def rodriguesResidual(K1, M1, p1, K2, p2, x):
     e2 = (p2 - p2_rep).reshape(-1)
 
     residuals = np.concatenate((e1, e2), axis=0)
+    print(np.sum(residuals**2))
     return residuals
 
 '''
@@ -482,6 +483,8 @@ Q5.3 Bundle adjustment.
             P2, the optimized 3D coordinates of points
 '''
 def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
+    p1 = p1.transpose()
+    p2 = p2.transpose()
     residual = lambda x: rodriguesResidual(K1, M1, p1, K2, p2, x)
     R2_init = M2_init[:, 0:3]
     t2_init = M2_init[:, 3]
