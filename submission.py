@@ -355,8 +355,21 @@ Q5.2: Rodrigues formula.
     Output: R, a rotation matrix
 '''
 def rodrigues(r):
-    # Replace pass by your implementation
-    pass
+    eps = 0.001
+    theta = np.sum(r**2)**0.5
+    if np.abs(theta) < eps:
+        return np.eye(3, dtype=np.float32)
+    else:
+        u = r / theta
+        u1, u2, u3 = u[0, 0], u[1, 0], u[2, 0]
+        u_cross = np.array([[0, -u3, u2], [u3, 0, -u1], [-u2, u1, 0]], dtype=np.float32)
+        
+        R = np.eye(3, dtype=np.float32) * np.cos(theta) \
+            + (1 - np.cos(theta)) * (u @ u.transpose()) \
+            + u_cross * np.sin(theta)
+        
+        return R
+
 
 '''
 Q5.2: Inverse Rodrigues formula.
