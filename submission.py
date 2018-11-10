@@ -435,9 +435,38 @@ Q5.3: Rodrigues residual.
             x, the flattened concatenationg of P, r2, and t2.
     Output: residuals, the difference between original and estimated projections
 '''
+def flatten(P, r2, t2):
+    # P: (N, 3)
+    # r2: (3, 1)
+    # t2: (3, 1)
+    # (3+3+N*3,)
+    return np.concatenate((r2.reshape(-1), t2.reshape(-1), P.reshape(-1)), axis=0)
+
+def inflate(x):
+    r2 = x[0:3].reshape(-1, 1)
+    t2 = x[3:6].reshape(-1, 1)
+    P  = x[6:].reshape(-1, 3)
+    return P, r2, t2
+
+
 def rodriguesResidual(K1, M1, p1, K2, p2, x):
-    # Replace pass by your implementation
-    pass
+    # p1, p2 should be transposed before passing in.
+    # p1, p2 should be (2, N)
+    P, r2, t2 = inflate(x)
+    R2 = rodrigues(r2)
+    M2 = np.concatenate((R2, t2), axis=1)
+    # homogeneous, (4, N)
+    P_h = np.concatenate( ( P, np.ones(P.shape[0], 1) ), axis=1 ).transpose()
+    p1_rep_h = K1 @ M1 @ P_h
+    p1_rep = p1_rep_h[0:2, :] / p1_rep_h[2, :]
+    p2_rep_h = K2 @ M2 @ P_h
+    p2_rep = p2_rep_h[0:2, :] / p2_rep_h[2, :]
+
+    e1 = (p1 - p1_rep).reshape(-1)
+    e2 = (p2 - p2_rep).reshape(-1)
+
+    residuals = np.concatenate((e1, e2), axis=0)
+    return residuals
 
 '''
 Q5.3 Bundle adjustment.
