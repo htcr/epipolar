@@ -6,6 +6,7 @@ Replace 'pass' by your implementation.
 import numpy as np
 import helper
 import cv2
+import scipy
 
 '''
 Q2.1: Eight Point Algorithm
@@ -481,5 +482,14 @@ Q5.3 Bundle adjustment.
             P2, the optimized 3D coordinates of points
 '''
 def bundleAdjustment(K1, M1, p1, K2, M2_init, p2, P_init):
-    # Replace pass by your implementation
-    pass
+    residual = lambda x: rodriguesResidual(K1, M1, p1, K2, p2, x)
+    R2_init = M2_init[:, 0:3]
+    t2_init = M2_init[:, 3]
+    r2_init = invRodrigues(R2_init)
+    x_init = flatten(P_init, r2_init, t2_init)
+    x_optim, _ = scipy.optimize.leastsq(residual, x_init)
+    
+    P2, r2, t2 = inflate(x_optim)
+    R2 = rodrigues(r2)
+    M2 = np.concatenate((R2, t2), axis=1)
+    return M2, P2
